@@ -2,6 +2,7 @@
 
 #include <fstream>
 #include <iostream>
+#include <vector>
 
 WaveFile::WaveFile(std::string filename)
 {
@@ -27,7 +28,7 @@ WaveFile::WaveFile(std::string filename)
     headerPointer += 4; // 32: BlockAlign
     headerPointer += 2; // 34: BitsPerSample
     bitsPerSample = littleEndian(headerPointer, 2);
-    int bytesPerSample = bitsPerSample / 8;
+    size_t bytesPerSample = bitsPerSample / 8;
 
     headerPointer += 2; // 36: Subchunk2ID
     headerPointer += 4; // 40: Subchunk2Size
@@ -39,6 +40,15 @@ WaveFile::WaveFile(std::string filename)
     std::cout << "sampleRate: " << sampleRate << "\n";
     std::cout << "bitsPerSample: " << bitsPerSample << "\n";
     std::cout << "numSamples: " << numSamples << "\n";
+
+    // TODO: write a test to check this works as expected
+    char* sampleBuffer = (char*) malloc(bytesPerSample);
+    samples = std::vector<uint32_t>(numSamples);
+    for (int i = 0; i < numSamples; i++)
+    {
+        byteStream.read(sampleBuffer, bytesPerSample);
+        samples[i] = littleEndian(sampleBuffer, bytesPerSample);
+    }
 }
 
 uint32_t WaveFile::littleEndian(char* bytes, size_t size)
