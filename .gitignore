@@ -1,3 +1,5 @@
 *.ini
 *.exe
 *.out
+
+.vscode
