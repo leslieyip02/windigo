@@ -1,5 +1,6 @@
 #include "WaveFile.hpp"
 
+#include <cassert>
 #include <fstream>
 #include <iostream>
 #include <vector>
@@ -12,12 +13,14 @@ WaveFile::WaveFile(std::string filename)
     byteStream.read(headerBuffer, HEADER_SIZE);
 
     char* headerPointer = headerBuffer;
-    // TODO: validate "RIFF", "WAVE", "fmt " and "data"
     headerPointer += 0; // 0:  ChunkID
+    assert(bigEndian(headerPointer, 4) == 0x52494646); // RIFF
     headerPointer += 4; // 4:  ChunkSize
     headerPointer += 4; // 8:  Format
+    assert(bigEndian(headerPointer, 4) == 0x57415645); // WAVE
 
     headerPointer += 4; // 12: Subchunk1ID
+    assert(bigEndian(headerPointer, 4) == 0x666d7420); // fmt
     headerPointer += 4; // 16: Subchunk1Size
     headerPointer += 4; // 20: AudioFormat
     headerPointer += 2; // 22: NumChannels
@@ -31,6 +34,7 @@ WaveFile::WaveFile(std::string filename)
     size_t bytesPerSample = bitsPerSample / 8;
 
     headerPointer += 2; // 36: Subchunk2ID
+    assert(bigEndian(headerPointer, 4) == 0x64617461); // data
     headerPointer += 4; // 40: Subchunk2Size
     uint32_t dataSize = littleEndian(headerPointer, 4);
     numSamples = dataSize / numChannels / bytesPerSample;
