@@ -23,6 +23,8 @@ WaveFile::WaveFile(std::string filename)
     assert(bigEndian(headerPointer, 4) == 0x666d7420); // fmt
     headerPointer += 4; // 16: Subchunk1Size
     headerPointer += 4; // 20: AudioFormat
+    uint32_t audioFormat = littleEndian(headerPointer, 2);
+    bool pcm = audioFormat == 1;
     headerPointer += 2; // 22: NumChannels
     numChannels = littleEndian(headerPointer, 2);
     headerPointer += 2; // 24: SampleRate
@@ -47,11 +49,25 @@ WaveFile::WaveFile(std::string filename)
 
     // TODO: write a test to check this works as expected
     char* sampleBuffer = (char*) malloc(bytesPerSample);
-    samples = std::vector<uint32_t>(numSamples);
+    samples = std::vector<Channel>(numChannels, Channel(numSamples));
     for (int i = 0; i < numSamples; i++)
     {
-        byteStream.read(sampleBuffer, bytesPerSample);
-        samples[i] = littleEndian(sampleBuffer, bytesPerSample);
+        for (int j = 0; j < numChannels; j++)
+        {
+            byteStream.read(sampleBuffer, bytesPerSample);
+            samples[j][i] = littleEndian(sampleBuffer, bytesPerSample);
+
+            // normalize data to [-1.0, 1.0) 
+            if (pcm) {
+                if (bitsPerSample == 8) {
+                    // values in the range [0, 255]
+                    samples[j][i] = samples[j][i] / 255.0 * 2.0 - 1.0;
+                } else if (bitsPerSample == 16) {
+                    // values in the range [-32768, 32767]
+                    samples[j][i] = samples[j][i] / 32678.0;
+                }
+            }
+        }
     }
 }
 
