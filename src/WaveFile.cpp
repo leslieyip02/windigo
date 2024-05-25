@@ -33,7 +33,7 @@ WaveFile::WaveFile(std::string filename)
     headerPointer += 4; // 32: BlockAlign
     headerPointer += 2; // 34: BitsPerSample
     bitsPerSample = littleEndian(headerPointer, 2);
-    size_t bytesPerSample = bitsPerSample / 8;
+    int bytesPerSample = bitsPerSample / 8;
 
     headerPointer += 2; // 36: Subchunk2ID
     assert(bigEndian(headerPointer, 4) == 0x64617461); // data
@@ -41,13 +41,7 @@ WaveFile::WaveFile(std::string filename)
     uint32_t dataSize = littleEndian(headerPointer, 4);
     numSamples = dataSize / numChannels / bytesPerSample;
 
-    // sanity check
-    std::cout << "numChannels: " << numChannels << "\n";
-    std::cout << "sampleRate: " << sampleRate << "\n";
-    std::cout << "bitsPerSample: " << bitsPerSample << "\n";
-    std::cout << "numSamples: " << numSamples << "\n";
-
-    // TODO: write a test to check this works as expected
+    // TODO: add unit test
     char* sampleBuffer = (char*) malloc(bytesPerSample);
     samples = std::vector<Channel>(numChannels, Channel(numSamples));
     for (int i = 0; i < numSamples; i++)
@@ -58,11 +52,15 @@ WaveFile::WaveFile(std::string filename)
             samples[j][i] = littleEndian(sampleBuffer, bytesPerSample);
 
             // normalize data to [-1.0, 1.0) 
-            if (pcm) {
-                if (bitsPerSample == 8) {
+            if (pcm)
+            {
+                if (bitsPerSample == 8)
+                {
                     // values in the range [0, 255]
                     samples[j][i] = samples[j][i] / 255.0 * 2.0 - 1.0;
-                } else if (bitsPerSample == 16) {
+                }
+                else if (bitsPerSample == 16)
+                {
                     // values in the range [-32768, 32767]
                     samples[j][i] = samples[j][i] / 32678.0;
                 }
@@ -71,7 +69,7 @@ WaveFile::WaveFile(std::string filename)
     }
 }
 
-uint32_t WaveFile::littleEndian(char* bytes, size_t size)
+uint32_t WaveFile::littleEndian(char* bytes, int size)
 {
     // least significant byte at smallest address
     uint32_t value = 0;
@@ -85,7 +83,7 @@ uint32_t WaveFile::littleEndian(char* bytes, size_t size)
     return value;
 }
 
-uint32_t WaveFile::bigEndian(char* bytes, size_t size)
+uint32_t WaveFile::bigEndian(char* bytes, int size)
 {
     // mosst significant byte at biggest address
     uint32_t value = 0;
