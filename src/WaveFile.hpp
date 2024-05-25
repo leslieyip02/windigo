@@ -1,6 +1,8 @@
 #include <iostream>
 #include <vector>
 
+#define Channel std::vector<double>
+
 class WaveFile
 {
 public:
@@ -15,8 +17,7 @@ private:
     uint32_t bitsPerSample;
     uint32_t numSamples;
 
-    // uint32_t to fit up to 32-bit samples
-    std::vector<uint32_t> samples;
+    std::vector<Channel> samples;
 
     uint32_t littleEndian(char* bytes, size_t size);
     uint32_t bigEndian(char* bytes, size_t size);
