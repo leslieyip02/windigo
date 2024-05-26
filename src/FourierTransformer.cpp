@@ -2,21 +2,19 @@
 
 #include <cmath>
 #include <complex>
-#include <fstream>
-#include <iostream>
 #include <vector>
 
 #define M_PI 3.14159265358979323846
 constexpr std::complex<double> I(0, 1);
 
-void FourierTransformer::fft(Channel input, uint32_t numSamples)
+std::vector<std::complex<double>> FourierTransformer::fft(Channel input, uint32_t numSamples)
 {
     // resize input so that its length is a power of 2
     int log2n = padInput(input, numSamples);
     numSamples = 1 << log2n;
 
-    std::vector<std::complex<double>> output(numSamples);
-    std::vector<std::complex<double>> buffer(numSamples);
+    std::vector<std::complex<double>> output(numSamples); // a
+    std::vector<std::complex<double>> buffer(numSamples); // A
     for (int i = 0; i < numSamples; i++)
     {
         output[reverseBits(i, log2n)] = input[i];
@@ -75,13 +73,68 @@ void FourierTransformer::fft(Channel input, uint32_t numSamples)
         std::fill(buffer.begin(), buffer.end(), 0.0);
     }
 
-    // output to csv (for now)
-    std::ofstream csv("../demo/fft.csv");
-    csv << "input,output(real),output(imaginary)\n";
+    return output;
+}
+
+std::vector<std::complex<double>> FourierTransformer::ifft(std::vector<std::complex<double>> input, uint32_t numSamples)
+{
+    // the implementation is identical to FFT,
+    // except coefficients are negated and there is a division by N at the end
+    // int log2n = padInput(input, numSamples);
+    // numSamples = 1 << log2n;
+    // std::cout << numSamples << " " << log2n << "\n";
+    int log2n = log2(numSamples);
+
+    std::vector<std::complex<double>> output(numSamples); // A
+    std::vector<std::complex<double>> buffer(numSamples); // a
     for (int i = 0; i < numSamples; i++)
     {
-        csv << input[i] << "," << output[i].real() << "," << output[i].imag() << "\n";
+        output[reverseBits(i, log2n)] = input[i];
     }
+
+    std::complex<double> w = exp(-I * (M_PI / (numSamples >> 1)));
+    for (int i = 0; i < log2n; i++)
+    {
+        int offset = 1 << i;
+        int numGroups = 1 << (log2n - 1 - i);
+        int groupSize = 1 << (i + 1);
+        for (int j = 0; j < numGroups; j++)
+        {
+            for (int k = 0; k < offset; k++)
+            {
+                int index = j * groupSize + k;
+                buffer[index] += output[index];
+                buffer[index + offset] += output[index];
+            }
+
+            for (int k = 0; k < offset; k++)
+            {
+                int index = j * groupSize + k + offset;
+                int commonDifference = numGroups;
+
+                // negate exponent
+                int upExponent = -modulo((index - offset) * commonDifference, numSamples);
+                std::complex<double> upAlpha = pow(w, upExponent);
+                buffer[index - offset] += upAlpha * output[index];
+
+                // negate exponent
+                int downExponent = -modulo(index * commonDifference, numSamples);
+                std::complex<double> downAlpha = pow(w, downExponent);
+                buffer[index] += downAlpha * output[index];
+            }
+        }
+
+        output.swap(buffer);
+        std::fill(buffer.begin(), buffer.end(), 0.0);
+    }
+
+    // division by N
+    for (int i = 0; i < numSamples; i++)
+    {
+        output[i] /= numSamples;
+    }
+
+    return output;
 }
 
 uint8_t FourierTransformer::padInput(Channel& input, uint32_t numSamples)
