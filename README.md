@@ -12,7 +12,8 @@ The main project is contained within `src`. For now, `main.cpp` performs FFT on 
 
 ```
 cd src
-g++ *.cpp
+g++ *.cpp -o windigo
+./windigo [input-filename] [output-filename]
 ```
 
 #### Set up Python environment
