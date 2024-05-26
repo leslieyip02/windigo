@@ -3,9 +3,12 @@
 
 #include <fstream>
 
-int main()
+int main(int argc, char** argv)
 {
-    WaveFile file = WaveFile("../samples/16-bit.wav");
+    std::string inputFilename = argc >= 2 ? argv[1] : "../samples/8-bit.wav";
+    std::string outputFilename = argc >= 3 ? argv[2] : "output.wav";
+
+    WaveFile file = WaveFile(inputFilename);
     FourierTransformer transformer;
 
     for (int i = 0; i < file.samples.size(); i++)
@@ -24,7 +27,6 @@ int main()
         }
     }
 
-    file.write("../demo/16-bit-copy.wav");
-
+    file.write(outputFilename);
     return 0;
 }

@@ -1,6 +1,7 @@
 *.exe
 *.ini
 *.out
+windigo
 
 .venv
 .vscode
