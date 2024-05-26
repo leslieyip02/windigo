@@ -11,6 +11,7 @@ public:
 
 private:
     uint8_t padInput(Channel& input, uint32_t numSamples);
+    uint32_t modulo(uint32_t num, uint8_t modulus);
 };
 
 #endif
