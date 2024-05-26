@@ -15,6 +15,7 @@ public:
     std::vector<Channel> samples;
 
     WaveFile(std::string filename);
+    void write(std::string filename);
 
 private:
     // uint32_t since header data can contain up to 4 bytes = 32 bits
@@ -22,8 +23,10 @@ private:
     uint32_t sampleRate;
     uint32_t bitsPerSample;
 
-    uint32_t littleEndian(char* bytes, int size);
-    uint32_t bigEndian(char* bytes, int size);
+    uint32_t littleEndianToInt(char* bytes, int size);
+    uint32_t bigEndianToInt(char* bytes, int size);
+
+    std::string intToLittleEndian(uint32_t value, int size);
 };
 
 #endif
