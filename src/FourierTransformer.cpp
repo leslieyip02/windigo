@@ -80,9 +80,6 @@ std::vector<std::complex<double>> FourierTransformer::ifft(std::vector<std::comp
 {
     // the implementation is identical to FFT,
     // except coefficients are negated and there is a division by N at the end
-    // int log2n = padInput(input, numSamples);
-    // numSamples = 1 << log2n;
-    // std::cout << numSamples << " " << log2n << "\n";
     int log2n = log2(numSamples);
 
     std::vector<std::complex<double>> output(numSamples); // A

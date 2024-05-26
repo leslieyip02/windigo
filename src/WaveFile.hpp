@@ -26,7 +26,7 @@ private:
     uint32_t littleEndianToInt(char* bytes, int size);
     uint32_t bigEndianToInt(char* bytes, int size);
 
-    std::string intToLittleEndian(uint32_t value, int size);
+    std::string intToLittleEndian(int value, int size);
 };
 
 #endif

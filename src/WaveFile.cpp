@@ -8,11 +8,12 @@
 
 WaveFile::WaveFile(std::string filename)
 {
-    // WAVE file format: http://soundfile.sapp.org/doc/WaveFormat/
+    // std::ios_base::binary is necessary for windows
     std::ifstream byteStream(filename, std::ios::binary);
     char headerBuffer[HEADER_SIZE];
     byteStream.read(headerBuffer, HEADER_SIZE);
 
+    // WAVE file format: http://soundfile.sapp.org/doc/WaveFormat/
     char* headerPointer = headerBuffer;
     headerPointer += 0; // 0:  ChunkID
     assert(bigEndianToInt(headerPointer, 4) == 0x52494646); // RIFF
@@ -72,13 +73,15 @@ WaveFile::WaveFile(std::string filename)
 
 void WaveFile::write(std::string filename)
 {
-    std::ofstream output(filename);
+    // std::ios_base::binary is necessary for windows
+    std::ofstream output(filename, std::ios_base::binary);
 
     int bytesPerSample = bitsPerSample / 8;
     int subchunk1Size = 16; // 16 for PCM
     int audioFormat = 1; // PCM by default
     int subchunk2Size = numSamples * numChannels * bytesPerSample;
-    int chunkSize = 36 + subchunk2Size;
+    int chunkSize = 4 + (8 + subchunk1Size) + (8 + subchunk2Size);
+
     int blockAlign = numChannels * bytesPerSample;
     int byteRate = sampleRate * blockAlign;
 
@@ -102,8 +105,21 @@ void WaveFile::write(std::string filename)
     {
         for (int j = 0; j < numChannels; j++)
         {
-            int value = std::round((samples[j][i] + 1.0) / 2.0 * 255.0);
-            output << intToLittleEndian(value, bytesPerSample);
+            // unnormalize
+            if (bitsPerSample == 8)
+            {
+                // values in the range [0, 255]
+                samples[j][i] = (samples[j][i] + 1.0) / 2.0 * 255.0;
+            }
+            else if (bitsPerSample == 16)
+            {
+                // values in the range [-32768, 32767]
+                // std::cout << samples[j][i] << "\n";
+                samples[j][i] = samples[j][i] * 32678.0;
+            }
+
+            int value = std::round(samples[j][i]);
+            output << intToLittleEndian(samples[j][i], bytesPerSample);
         }
     }
 }
@@ -136,7 +152,7 @@ uint32_t WaveFile::bigEndianToInt(char* bytes, int size)
     return value;
 }
 
-std::string WaveFile::intToLittleEndian(uint32_t value, int size)
+std::string WaveFile::intToLittleEndian(int value, int size)
 {
     char* bytes = (char*) malloc(size);
     uint32_t mask = (1 << 8) - 1;
