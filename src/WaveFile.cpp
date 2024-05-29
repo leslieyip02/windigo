@@ -45,7 +45,7 @@ WaveFile::WaveFile(std::string filename)
 
     // TODO: add unit test
     char* sampleBuffer = (char*) malloc(bytesPerSample);
-    samples = std::vector<Channel>(numChannels, Channel(numSamples));
+    samples = std::vector<std::vector<double>>(numChannels, std::vector<double>(numSamples));
     for (int i = 0; i < numSamples; i++)
     {
         for (int j = 0; j < numChannels; j++)
@@ -114,12 +114,11 @@ void WaveFile::write(std::string filename)
             else if (bitsPerSample == 16)
             {
                 // values in the range [-32768, 32767]
-                // std::cout << samples[j][i] << "\n";
                 samples[j][i] = samples[j][i] * 32678.0;
             }
 
             int value = std::round(samples[j][i]);
-            output << intToLittleEndian(samples[j][i], bytesPerSample);
+            output << intToLittleEndian(value, bytesPerSample);
         }
     }
 }
