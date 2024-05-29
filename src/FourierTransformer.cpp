@@ -4,12 +4,9 @@
 #include <complex>
 #include <vector>
 
-#define M_PI 3.14159265358979323846
-constexpr std::complex<double> I(0, 1);
-
-std::vector<std::complex<double>> FourierTransformer::fft(Channel input, uint32_t numSamples)
+std::vector<std::complex<double>> FourierTransformer::fft(std::vector<std::complex<double>> input, uint32_t numSamples)
 {
-    // resize input so that its length is a power of 2
+    // zero pad input so that its length is a power of 2
     int log2n = padInput(input, numSamples);
     numSamples = 1 << log2n;
 
@@ -80,7 +77,8 @@ std::vector<std::complex<double>> FourierTransformer::ifft(std::vector<std::comp
 {
     // the implementation is identical to FFT,
     // except coefficients are negated and there is a division by N at the end
-    int log2n = log2(numSamples);
+    int log2n = padInput(input, numSamples);
+    numSamples = 1 << log2n;
 
     std::vector<std::complex<double>> output(numSamples); // A
     std::vector<std::complex<double>> buffer(numSamples); // a
@@ -134,7 +132,7 @@ std::vector<std::complex<double>> FourierTransformer::ifft(std::vector<std::comp
     return output;
 }
 
-uint8_t FourierTransformer::padInput(Channel& input, uint32_t numSamples)
+uint8_t FourierTransformer::padInput(std::vector<std::complex<double>>& input, uint32_t numSamples)
 {
     // TODO: add unit test
     uint32_t inputSize = 1;
