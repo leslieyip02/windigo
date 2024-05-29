@@ -15,14 +15,20 @@ PitchShifter::PitchShifter(int frameSize, int overlapFactor)
 
 void PitchShifter::shift(WaveFile& file, int steps)
 {
-    // based on https://www.guitarpitchshifter.com/algorithm.html
-    // and https://www.guitarpitchshifter.com/matlab.html
-    // and Chapter 5 https://www-fourier.ujf-grenoble.fr/~faure/enseignement/musique/documents/chapter_4_musical_theories/2007_Sethares-Rhythm%20and%20Transforms.pdf
+    // phase vocoder algorithm
+    // https://www.guitarpitchshifter.com/algorithm.html
+    // https://www-fourier.ujf-grenoble.fr/~faure/enseignement/musique/documents/chapter_4_musical_theories/2007_Sethares-Rhythm%20and%20Transforms.pdf
+    // https://github.com/cwoodall/pitch-shifter-py
 
+    // doubling a frequency results in the pitch jumping an octave
+    // i.e. A4 = 440 Hz and A5 = 880 Hz
+    // there are 12 semitones in 1 octave, so the corresponding shift would be 2^(semitones / 12)
     double scale = pow(2.0, (double) steps / 12.0);
+
     int analysisHopSize = frameSize / overlapFactor;
     int synthesisHopSize = analysisHopSize * scale;
 
+    // necessary for smoothing
     std::vector<double> window = hanningWindow(frameSize);
     std::vector<double> omegaBins(frameSize);
     for (int k = 0; k < frameSize; k++)
@@ -129,7 +135,8 @@ void PitchShifter::shift(WaveFile& file, int steps)
 
 std::vector<double> PitchShifter::hanningWindow(int frameSize)
 {
-    // based on NumPy implementation: https://github.com/numpy/numpy/blob/v1.26.0/numpy/lib/function_base.py#L3128-L3234
+    // based on NumPy implementation
+    // https://github.com/numpy/numpy/blob/v1.26.0/numpy/lib/function_base.py#L3128-L3234
     std::vector<double> window(frameSize);
     int n = 1 - frameSize;
     for (int i = 0; i < frameSize; i++)

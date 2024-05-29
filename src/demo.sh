@@ -1,3 +1,8 @@
+#!/bin/bash
+
+# the following script compiles the project and runs on samples files,
+# saving the results into the demo directory
+
 g++ *.cpp -o windigo
 
 ./windigo -1 ../samples/8-bit.wav ../demo/8-bit/-1.wav
