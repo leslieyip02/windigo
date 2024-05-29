@@ -22,26 +22,35 @@ void PitchShifter::shift(WaveFile& file, int steps)
     double scale = pow(2.0, (double) steps / 12.0);
     int analysisHopSize = frameSize / overlapFactor;
     int synthesisHopSize = analysisHopSize * scale;
+
     std::vector<double> window = hanningWindow(frameSize);
+    std::vector<double> omegaBins(frameSize);
+    for (int k = 0; k < frameSize; k++)
+    {
+        omegaBins[k] = 2 * M_PI * k / frameSize;
+    }
 
     for (int channel = 0; channel < file.numChannels; channel++)
     {
         // zero pad both ends of input
         // so that overlap addition of the first and last few frames works properly
-        int padLength = analysisHopSize * (overlapFactor - 1);
-        std::vector<std::complex<double>> input(file.numSamples + padLength * 2);
+        int analysisPadSize = analysisHopSize * (overlapFactor - 1);
+        int inputSize = file.numSamples + 2 * analysisPadSize;
+
+        // pad input so that frames will line up nicely
+        int endFramePad = inputSize - (int) (inputSize / analysisHopSize) * analysisHopSize;
+        inputSize += endFramePad;
+        std::vector<std::complex<double>> input(inputSize);
         for (int k = 0; k < file.numSamples; k++)
         {
-            input[padLength + k] = std::complex<double>(file.samples[channel][k]);
+            input[analysisPadSize + k] = std::complex<double>(file.samples[channel][k]);
         }
 
-        // zero pad input so that its length is a power of 2
-        int log2n = transformer.padInput(input, input.size());
-        int numSamples = 1 << log2n;
-
-        int numFrames = numSamples / analysisHopSize - (overlapFactor - 1);
-        std::vector<double> output(numFrames * synthesisHopSize);
-        // std::vector<double> output(numSamples);
+        // output size is scaled according to input size since it stores the same audio
+        // the pitch shift can then be achieved by resampling
+        int numFrames = inputSize / analysisHopSize - (overlapFactor - 1);
+        int outputSize = inputSize * scale;
+        std::vector<double> output(outputSize);
 
         std::vector<double> phases(frameSize);
         std::vector<double> cumulativePhases(frameSize);
@@ -56,7 +65,7 @@ void PitchShifter::shift(WaveFile& file, int steps)
             int left = i * analysisHopSize;
             for (int k = 0; k < frameSize; k++)
             {
-                frame[k] = input[left + k] * window[k] / std::sqrt(overlapFactor / 2.0);
+                frame[k] = input[left + k] * window[k] / std::sqrt(((double) frameSize / analysisHopSize) / 2.0);
             }
 
             // transform to frequency domain
@@ -72,40 +81,48 @@ void PitchShifter::shift(WaveFile& file, int steps)
                 double phase = std::arg(transformed[k]);
 
                 // calculate phase difference
-                double expectedDeltaPhase = 2.0 * M_PI * k * analysisHopSize / frameSize;
-                double deltaPhase = phase - phases[k] - expectedDeltaPhase;
-                deltaPhase = std::fmod(deltaPhase + M_PI, 2.0 * M_PI) - M_PI; // constrain to [-π, π]
+                double deltaPhase = phase - phases[k] - omegaBins[k] * analysisHopSize;
+
+                // constrain phase difference to [-π, π]
+                // std::fmod doesn't work with negative numbers, so make this positive first
+                if (deltaPhase < 0)
+                {
+                    deltaPhase += std::ceil(-deltaPhase / (2.0 * M_PI)) * 2.0 * M_PI;
+                }
+                deltaPhase = std::fmod(deltaPhase + M_PI, 2.0 * M_PI) - M_PI;
                 phases[k] = phase;
 
-                double trueFrequency = 2.0 * M_PI * k / frameSize + deltaPhase / analysisHopSize;
+                double trueFrequency = omegaBins[k] + deltaPhase / analysisHopSize;
                 cumulativePhases[k] += trueFrequency * synthesisHopSize;
 
-                // shift pitches
-                int index = k * scale;
-                if (index < frameSize)
-                {
-                    buffer[index] = magnitude * std::complex<double>(
-                        std::cos(cumulativePhases[k]),
-                        std::sin(cumulativePhases[k]) * scale
-                    );
-                }
+                buffer[k] = magnitude * std::complex<double>(
+                    std::cos(cumulativePhases[k]),
+                    std::sin(cumulativePhases[k])
+                );
             }
 
             // apply window
-            // transformed = transformer.ifft(transformed, frameSize);
             transformed = transformer.ifft(buffer, frameSize);
-
-            // left = i * synthesisHopSize;
+            left = i * synthesisHopSize;
             for (int k = 0; k < frameSize; k++)
             {
                 output[left + k] += transformed[k].real() * window[k];
             }
         }
 
-        // resample output vector back into the channel with linear interpolation
+        // remove scaled padding
+        int synthesisPadSize = synthesisHopSize * (overlapFactor - 1);
+        int unpaddedOutputSize = outputSize - 2 * synthesisPadSize;
+
+        // resample output vector with linear interpolation
+        // https://paulbourke.net/miscellaneous/interpolation/
         for (int i = 0; i < file.numSamples; i++)
         {
-            file.samples[channel][i] = output[padLength + i];
+            double x = synthesisPadSize + (double) i / file.numSamples * unpaddedOutputSize;
+            double y1 = output[std::floor(x)];
+            double y2 = output[std::ceil(x)];
+            double ratio = x - std::floor(x);
+            file.samples[channel][i] = y1 * (1.0 - ratio) + y2 * ratio;
         }
     }
 }
