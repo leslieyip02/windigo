@@ -127,6 +127,10 @@ void PitchShifter::shift(WaveFile& file, int steps)
             left = i * synthesisHopSize;
             for (int k = 0; k < frameSize; k++)
             {
+                if (left + k >= outputSize)
+                {
+                    break;
+                }
                 output[left + k] += transformed[k].real() * window[k];
             }
         }
@@ -140,6 +144,11 @@ void PitchShifter::shift(WaveFile& file, int steps)
         for (int i = 0; i < file.numSamples; i++)
         {
             double x = synthesisPadSize + (double) i / file.numSamples * unpaddedOutputSize;
+            if (std::ceil(x) >= outputSize)
+            {
+                break;
+            }
+
             double y1 = output[std::floor(x)];
             double y2 = output[std::ceil(x)];
             double ratio = x - std::floor(x);

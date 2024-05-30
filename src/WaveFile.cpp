@@ -26,7 +26,6 @@ WaveFile::WaveFile(std::string filename)
     headerPointer += 4; // 16: Subchunk1Size
     headerPointer += 4; // 20: AudioFormat
     uint32_t audioFormat = littleEndianToInt(headerPointer, 2);
-    bool pcm = audioFormat == 1;
     headerPointer += 2; // 22: NumChannels
     numChannels = littleEndianToInt(headerPointer, 2);
     headerPointer += 2; // 24: SampleRate
@@ -43,6 +42,13 @@ WaveFile::WaveFile(std::string filename)
     uint32_t dataSize = littleEndianToInt(headerPointer, 4);
     numSamples = dataSize / numChannels / bytesPerSample;
 
+    bool pcm = audioFormat == 1;
+    if (pcm)
+    {
+        // only 8-bit and 16-bit supported
+        assert(bitsPerSample == 8 || bitsPerSample == 16);
+    }
+
     // TODO: add unit test
     char* sampleBuffer = (char*) malloc(bytesPerSample);
     samples = std::vector<std::vector<double>>(numChannels, std::vector<double>(numSamples));
@@ -51,7 +57,7 @@ WaveFile::WaveFile(std::string filename)
         for (int j = 0; j < numChannels; j++)
         {
             byteStream.read(sampleBuffer, bytesPerSample);
-            samples[j][i] = littleEndianToInt(sampleBuffer, bytesPerSample);
+            uint32_t rawValue = littleEndianToInt(sampleBuffer, bytesPerSample);
 
             // normalize data to [-1.0, 1.0) 
             if (pcm)
@@ -59,13 +65,18 @@ WaveFile::WaveFile(std::string filename)
                 if (bitsPerSample == 8)
                 {
                     // values in the range [0, 255]
-                    samples[j][i] = samples[j][i] / 255.0 * 2.0 - 1.0;
+                    samples[j][i] = (double) rawValue / 255.0 * 2.0 - 1.0;
                 }
                 else if (bitsPerSample == 16)
                 {
                     // values in the range [-32768, 32767]
-                    samples[j][i] = samples[j][i] / 32767.0;
+                    samples[j][i] = (double) static_cast<int16_t>(rawValue) / 32767.0;
                 }
+            }
+            else
+            {
+                // if IEEE, the float should already be [-1.0, 1,0)
+                samples[j][i] = static_cast<double>(rawValue);
             }
         }
     }
@@ -117,8 +128,7 @@ void WaveFile::write(std::string filename)
                 samples[j][i] = samples[j][i] * 32767.0;
             }
 
-            int value = samples[j][i];
-            output << intToLittleEndian(value, bytesPerSample);
+            output << intToLittleEndian(samples[j][i], bytesPerSample);
         }
     }
 }
@@ -131,7 +141,7 @@ uint32_t WaveFile::littleEndianToInt(char* bytes, int size)
     {
         // bitmask is necessary to prevent sign extension
         uint32_t offset = i * 8;
-        uint32_t mask = 255 << offset;
+        uint32_t mask = 0xff << offset;
         value |= (bytes[i] << offset) & mask;
     }
     return value;
@@ -139,13 +149,13 @@ uint32_t WaveFile::littleEndianToInt(char* bytes, int size)
 
 uint32_t WaveFile::bigEndianToInt(char* bytes, int size)
 {
-    // mosst significant byte at biggest address
+    // most significant byte at biggest address
     uint32_t value = 0;
     for (int i = 0; i < size; i++)
     {
         // bitmask is necessary to prevent sign extension
         uint32_t offset = (size - i - 1) * 8;
-        uint32_t mask = 255 << offset;
+        uint32_t mask = 0xff << offset;
         value |= bytes[i] << offset;
     }
     return value;
