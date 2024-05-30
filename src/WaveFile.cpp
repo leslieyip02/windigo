@@ -64,7 +64,7 @@ WaveFile::WaveFile(std::string filename)
                 else if (bitsPerSample == 16)
                 {
                     // values in the range [-32768, 32767]
-                    samples[j][i] = samples[j][i] / 32678.0;
+                    samples[j][i] = samples[j][i] / 32767.0;
                 }
             }
         }
@@ -114,10 +114,10 @@ void WaveFile::write(std::string filename)
             else if (bitsPerSample == 16)
             {
                 // values in the range [-32768, 32767]
-                samples[j][i] = samples[j][i] * 32678.0;
+                samples[j][i] = samples[j][i] * 32767.0;
             }
 
-            int value = std::round(samples[j][i]);
+            int value = samples[j][i];
             output << intToLittleEndian(value, bytesPerSample);
         }
     }

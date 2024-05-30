@@ -16,9 +16,19 @@ PitchShifter::PitchShifter(int frameSize, int overlapFactor)
 void PitchShifter::shift(WaveFile& file, int steps)
 {
     // phase vocoder algorithm
+    // the phase vocoder algorithm uses the short-time Fourier transform to
+    // sample and process audio in frames before recombining the frames to synthesise a new singnal
+    // 
+    // there are 3 main stages to the algorithm:
+    // 1. analysis
+    // 2. processing
+    // 3. synthesis
+    //
+    // references used:
     // https://www.guitarpitchshifter.com/algorithm.html
     // https://www-fourier.ujf-grenoble.fr/~faure/enseignement/musique/documents/chapter_4_musical_theories/2007_Sethares-Rhythm%20and%20Transforms.pdf
     // https://github.com/cwoodall/pitch-shifter-py
+    // http://blogs.zynaptiq.com/bernsee/pitch-shifting-using-the-ft/
 
     // doubling a frequency results in the pitch jumping an octave
     // i.e. A4 = 440 Hz and A5 = 880 Hz
@@ -30,10 +40,10 @@ void PitchShifter::shift(WaveFile& file, int steps)
 
     // necessary for smoothing
     std::vector<double> window = hanningWindow(frameSize);
-    std::vector<double> omegaBins(frameSize);
+    std::vector<double> omegas(frameSize);
     for (int k = 0; k < frameSize; k++)
     {
-        omegaBins[k] = 2 * M_PI * k / frameSize;
+        omegas[k] = 2 * M_PI * k / frameSize;
     }
 
     for (int channel = 0; channel < file.numChannels; channel++)
@@ -67,6 +77,8 @@ void PitchShifter::shift(WaveFile& file, int steps)
             std::vector<std::complex<double>> transformed(frameSize);
             std::vector<std::complex<double>> buffer(frameSize);
 
+            // analysis
+
             // apply window
             int left = i * analysisHopSize;
             for (int k = 0; k < frameSize; k++)
@@ -86,8 +98,10 @@ void PitchShifter::shift(WaveFile& file, int steps)
                 // std::arg(const std::complex<T>& x) calculates the phase of x
                 double phase = std::arg(transformed[k]);
 
+                // processing
+
                 // calculate phase difference
-                double deltaPhase = phase - phases[k] - omegaBins[k] * analysisHopSize;
+                double deltaPhase = phase - phases[k] - omegas[k] * analysisHopSize;
 
                 // constrain phase difference to [-π, π]
                 // std::fmod doesn't work with negative numbers, so make this positive first
@@ -98,7 +112,7 @@ void PitchShifter::shift(WaveFile& file, int steps)
                 deltaPhase = std::fmod(deltaPhase + M_PI, 2.0 * M_PI) - M_PI;
                 phases[k] = phase;
 
-                double trueFrequency = omegaBins[k] + deltaPhase / analysisHopSize;
+                double trueFrequency = omegas[k] + deltaPhase / analysisHopSize;
                 cumulativePhases[k] += trueFrequency * synthesisHopSize;
 
                 buffer[k] = magnitude * std::complex<double>(
@@ -107,7 +121,8 @@ void PitchShifter::shift(WaveFile& file, int steps)
                 );
             }
 
-            // apply window
+            // synthesis
+            // apply window when recombining data for smoothing
             transformed = transformer.ifft(buffer, frameSize);
             left = i * synthesisHopSize;
             for (int k = 0; k < frameSize; k++)

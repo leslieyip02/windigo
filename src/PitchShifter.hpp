@@ -9,7 +9,7 @@
 class PitchShifter
 {
 public:
-    void shift(WaveFile &file, int steps);
+    void shift(WaveFile& file, int steps);
     PitchShifter(int frameSize, int overlapFactor);
 
 private:
