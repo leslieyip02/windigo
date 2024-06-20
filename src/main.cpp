@@ -13,9 +13,7 @@ int main(int argc, char** argv)
     std::string outputFilename = argc >= 4 ? argv[3] : "output.wav";
 
     WaveFile file = WaveFile(inputFilename);
-    PitchShifter shifter = PitchShifter(4096, 4);
-    // PitchShifter shifter = PitchShifter(8192, 4);
-    // PitchShifter shifter = PitchShifter(4096, 8);
+    PitchShifter shifter = PitchShifter(8192, 4);
     shifter.shift(file, steps);
     file.write(outputFilename);
 
