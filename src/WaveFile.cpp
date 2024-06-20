@@ -127,8 +127,14 @@ WaveFile::WaveFile(std::string filename)
                 else if (bitsPerSample == 24)
                 {
                     // values in the range [-2147483648, 2147483392]
-                    // zero pad so the range becomes [-2147483648, 2147483647]
+                    // right shift so the range becomes [-2147483648, 2147483647]
+                    // static_cast is necessary because the values are stored in 2's complement
                     samples[j][i] = (double) ((static_cast<int32_t>(rawValue << 8)) / 2147483648.0);
+                }
+                else if (bitsPerSample == 32)
+                {
+                    // values in the range [-2147483648, 2147483647]
+                    samples[j][i] = (double) ((static_cast<int32_t>(rawValue)) / 2147483648.0);
                 }
             }
             else
