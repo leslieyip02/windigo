@@ -7,7 +7,7 @@
 */
 
 #include <JuceHeader.h>
-#include "PlayingSoundFilesTutorial_01.h"
+#include "WindigoMilestone1.h"
 
 class Application    : public juce::JUCEApplication
 {
@@ -15,12 +15,12 @@ public:
     //==============================================================================
     Application() = default;
 
-    const juce::String getApplicationName() override       { return "PlayingSoundFilesTutorial"; }
+    const juce::String getApplicationName() override       { return "WindigoMilestone1"; }
     const juce::String getApplicationVersion() override    { return "1.0.0"; }
 
     void initialise (const juce::String&) override
     {
-        mainWindow.reset (new MainWindow ("PlayingSoundFilesTutorial", new MainContentComponent, *this));
+        mainWindow.reset (new MainWindow ("WindigoMilestone1", new MainContentComponent, *this));
     }
 
     void shutdown() override                         { mainWindow = nullptr; }
@@ -36,6 +36,7 @@ private:
               app (a)
         {
             setUsingNativeTitleBar (true);
+            
             setContentOwned (c, true);
 
            #if JUCE_ANDROID || JUCE_IOS
@@ -44,6 +45,7 @@ private:
             setResizable (true, false);
             setResizeLimits (300, 250, 10000, 10000);
             centreWithSize (getWidth(), getHeight());
+           
            #endif
 
             setVisible (true);

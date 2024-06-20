@@ -57,7 +57,7 @@
     <VS2019 targetFolder="Builds/VisualStudio2019">
       <CONFIGURATIONS>
         <CONFIGURATION name="Debug" isDebug="1" optimisation="1" targetName="PlayingSoundFilesTutorial"/>
-        <CONFIGURATION name="Release" isDebug="0" optimisation="3" targetName="PlayingSoundFilesTutorial"/>
+        <CONFIGURATION name="Windigo Milestone 1" isDebug="0" optimisation="3" targetName="Windigo Milestone 1"/>
       </CONFIGURATIONS>
       <MODULEPATHS>
         <MODULEPATH id="juce_audio_basics" path=""/>
