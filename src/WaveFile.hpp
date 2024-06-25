@@ -7,7 +7,8 @@
 class WaveFile
 {
 public:
-    static const std::size_t HEADER_SIZE = 44;
+    // standard PCM header size for 8-bit and 16-bit
+    static const std::size_t PCM_HEADER_SIZE = 44;
 
     uint32_t numSamples;
     uint32_t numChannels;
