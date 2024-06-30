@@ -4,7 +4,10 @@
 # saving the results into the demo directory
 
 echo "Compiling ..."
-g++ *.cpp -o windigo
+g++ -c WaveFile.cpp
+g++ -c FourierTransformer.cpp
+g++ -c PitchShifter.cpp
+g++ demo.cpp -I -o windigo
 
 echo "Processing 8-bit files ..."
 mkdir -p ../demo/8-bit
