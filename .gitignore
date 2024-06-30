@@ -1,11 +1,13 @@
-*.exe
-*.ini
-*.out
-windigo
-
 .venv
 .vscode
-output.wav
+
+*.exe
+*.out
+*.ini
 
 Builds
 JuceLibraryCode
+
+Examples/.venv
+windigo
+output.wav
