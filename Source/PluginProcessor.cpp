@@ -209,39 +209,48 @@ void SamplerAudioProcessor::loadFile()
 
 }
 
-void SamplerAudioProcessor::upKey()
-{
-
-    if (currentPitch < 11)
-    {
-        currentPitch++;
-        WaveFile toBeShifted = WaveFile(audioClip.getFullPathName().toStdString());
-        // sendActionMessage("Modulation in progress..."); i need to make this run async
-        shifter.shift(toBeShifted, currentPitch);
-        remove("./temp.wav");
-        toBeShifted.write("./temp.wav");
-        juce::File shifted = juce::File("./temp.wav");
-        mFormatReader = mFormatManager.createReaderFor(shifted);
-        mSampler.addSound(new juce::SamplerSound("Sample", *mFormatReader, juce::BigInteger().setRange(0, 128, true), 72, 0.1, 0.1, 10.0));
-        sendActionMessage("Keyboard is ready");
-    }
+void SamplerAudioProcessor::upKey() {
+    std::thread work([&]
+        {
+            sendActionMessage("Modulation in progress...");
+            currentPitch++;
+            WaveFile toBeShifted = WaveFile(audioClip.getFullPathName().toStdString());
+            shifter.shift(toBeShifted, currentPitch);
+            remove("./temp.wav");
+            toBeShifted.write("./temp.wav");
+            juce::File shifted = juce::File("./temp.wav");
+            mFormatReader = mFormatManager.createReaderFor(shifted);
+            mSampler.addSound(new juce::SamplerSound("Sample", *mFormatReader, juce::BigInteger().setRange(0, 128, true), 72, 0.1, 0.1, 10.0));
+            sendActionMessage("Keyboard is ready");
+        });
+    work.detach();
 }
 
-void SamplerAudioProcessor::downKey()
-{
-    if (currentPitch > -11)
-    {
+void SamplerAudioProcessor::downKey() {
+    std::thread work([&]
+        {
+            sendActionMessage("Modulation in progress...");
+            currentPitch--;
+            WaveFile toBeShifted = WaveFile(audioClip.getFullPathName().toStdString());
+            shifter.shift(toBeShifted, currentPitch); //alot of distortion when downkey
+            remove("./temp.wav");
+            toBeShifted.write("./temp.wav");
+            juce::File shifted = juce::File("./temp.wav");
+            mFormatReader = mFormatManager.createReaderFor(shifted);
+            mSampler.addSound(new juce::SamplerSound("Sample", *mFormatReader, juce::BigInteger().setRange(0, 128, true), 72, 0.1, 0.1, 10.0));
+            sendActionMessage("Keyboard is ready");
+        });
+    work.detach();
+}
+
+void SamplerAudioProcessor::addOriginalSound() {
+    std::thread work([&] {
         currentPitch--;
-        WaveFile toBeShifted = WaveFile(audioClip.getFullPathName().toStdString());
-        // sendActionMessage("Modulation in progress..."); i need to make this run async
-        shifter.shift(toBeShifted, currentPitch); //alot of distortion when downkey
-        remove("./temp.wav");
-        toBeShifted.write("./temp.wav");
-        juce::File shifted = juce::File("./temp.wav");
-        mFormatReader = mFormatManager.createReaderFor(shifted);
+        mFormatReader = mFormatManager.createReaderFor(audioClip);
         mSampler.addSound(new juce::SamplerSound("Sample", *mFormatReader, juce::BigInteger().setRange(0, 128, true), 72, 0.1, 0.1, 10.0));
         sendActionMessage("Keyboard is ready");
-    }
+        });
+    work.detach();
 }
 
 int SamplerAudioProcessor::getKey()

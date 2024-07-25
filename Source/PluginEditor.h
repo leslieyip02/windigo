@@ -25,6 +25,7 @@ public:
   void paint(juce::Graphics&) override;
   void resized() override;
   juce::Label pluginStateDisplay;
+  
   void actionListenerCallback(const juce::String& message) override;
 
 
@@ -41,6 +42,7 @@ private:
   juce::TextButton enableModulationButton{ "Enable Modulation" };
   juce::Label currentKeyDisplay;
   juce::Label modulationLabel;
+  juce::Label currentStatusLabel;
 
 
 

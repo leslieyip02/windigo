@@ -62,6 +62,7 @@ public:
   void loadFile();
   void upKey();
   void downKey();
+  void addOriginalSound();
   int getKey();
   bool isFileLoaded();
 

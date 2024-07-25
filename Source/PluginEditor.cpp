@@ -21,7 +21,9 @@ SamplerAudioProcessorEditor::SamplerAudioProcessorEditor(SamplerAudioProcessor& 
     mLoadButton.onClick = [this]
         {
             audioProcessor.loadFile();
-
+            upKeyButton.setEnabled(false);
+            downKeyButton.setEnabled(false);
+            currentKeyDisplay.setText("0", juce::dontSendNotification);
         };
 
     audioProcessor.addActionListener(this); //this is so that we can update the pluginStateDisplay when we load file into audio processor
@@ -35,18 +37,27 @@ SamplerAudioProcessorEditor::SamplerAudioProcessorEditor(SamplerAudioProcessor& 
     upKeyButton.setEnabled(false);
     upKeyButton.onClick = [this]
         {
-            audioProcessor.upKey();
-            currentKeyDisplay.setText(juce::String(audioProcessor.getKey()), juce::dontSendNotification);
-            pluginStateDisplay.setText("Modulation in progress", juce::dontSendNotification);
+            if (audioProcessor.getKey() < 11) {
+                pluginStateDisplay.setText("Modulation in progress...", juce::dontSendNotification);
+                currentKeyDisplay.setText(juce::String(audioProcessor.getKey() + 1), juce::dontSendNotification);
+                audioProcessor.upKey();
+            }
         };
 
     addAndMakeVisible(downKeyButton);
     downKeyButton.setEnabled(false);
-    downKeyButton.onClick = [this]
-        {
-            audioProcessor.downKey();
-            currentKeyDisplay.setText(juce::String(audioProcessor.getKey()), juce::dontSendNotification);
+    downKeyButton.onClick = [this] {
+        if (audioProcessor.getKey() > 1) {
             pluginStateDisplay.setText("Modulation in progress", juce::dontSendNotification);
+            currentKeyDisplay.setText(juce::String(audioProcessor.getKey() - 1), juce::dontSendNotification);
+            audioProcessor.downKey();
+        }
+
+        if (audioProcessor.getKey() == 1) {
+            pluginStateDisplay.setText("Modulation in progress", juce::dontSendNotification);
+            currentKeyDisplay.setText(juce::String(0), juce::dontSendNotification);
+            audioProcessor.addOriginalSound();
+        }
         };
 
     addAndMakeVisible(enableModulationButton);
@@ -65,8 +76,17 @@ SamplerAudioProcessorEditor::SamplerAudioProcessorEditor(SamplerAudioProcessor& 
     pluginStateDisplay.setText("Please load a file first", juce::dontSendNotification);
     pluginStateDisplay.setColour(juce::Label::textColourId, juce::Colours::black);
     pluginStateDisplay.setColour(juce::Label::backgroundColourId, juce::Colours::white);
-    pluginStateDisplay.setColour(juce::Label::outlineColourId, juce::Colours::turquoise);
-    setSize(1000, 600);
+    pluginStateDisplay.setColour(juce::Label::outlineColourId, juce::Colours::darkgrey);
+    pluginStateDisplay.setJustificationType(juce::Justification::centred);
+    pluginStateDisplay.setFont(juce::Font(18.0));
+
+    addAndMakeVisible(currentStatusLabel);
+    currentStatusLabel.attachToComponent(&pluginStateDisplay, false);
+    currentStatusLabel.setText("Current Status:", juce::dontSendNotification);
+    currentStatusLabel.setColour(juce::Label::textColourId, juce::Colours::whitesmoke);
+    currentStatusLabel.setColour(juce::Label::backgroundColourId, juce::Colours::darkgrey);
+
+    setSize(750, 300);
 }
 
 SamplerAudioProcessorEditor::~SamplerAudioProcessorEditor()
@@ -87,16 +107,16 @@ void SamplerAudioProcessorEditor::paint(juce::Graphics& g)
 void SamplerAudioProcessorEditor::resized()
 {
     // keyboard components
-    mLoadButton.setBounds(getWidth() / 2 - 200, getHeight() / 2 - 50, 100, 100);
-    keyboard.setBounds(getWidth() / 2 - 300, getHeight() / 2 + 100, 600, 150);
-    pluginStateDisplay.setBounds(getWidth() / 2 + 50, getHeight() / 2 - 100, 150, 30);
-
+    mLoadButton.setBounds(getWidth() / 2 - 300, getHeight() / 2 - 84, 100, 60);
+    keyboard.setBounds(getWidth() / 2 - 300, getHeight() / 2 - 15, 600, 150);
+    pluginStateDisplay.setBounds(getWidth() / 2 - 190, getHeight() / 2 - 60, 300, 36);
 
     //modulation components
-    upKeyButton.setBounds(getWidth() - 240, 300, 60, 20);
-    downKeyButton.setBounds(getWidth() - 360, 300, 60, 20);
-    currentKeyDisplay.setBounds(getWidth() - 300, 300, 60, 20);
-    enableModulationButton.setBounds(getWidth() - 360, 280, 180, 20);
+    upKeyButton.setBounds(getWidth() - 140, getHeight() / 2 - 52, 60, 27);
+    downKeyButton.setBounds(getWidth() - 260, getHeight() / 2 - 52, 60, 27);
+    currentKeyDisplay.setBounds(getWidth() - 200, getHeight() / 2 - 52, 60, 27);
+    enableModulationButton.setBounds(getWidth() - 260, getHeight() / 2 - 79, 180, 27);
+    
 }
 
 void SamplerAudioProcessorEditor::actionListenerCallback(const juce::String& message)
