@@ -202,6 +202,7 @@ void SamplerAudioProcessor::loadFile()
                 {
                     mSampler.addSound(new juce::SamplerSound("Sample", *mFormatReader, juce::BigInteger().setRange(0, 128, true), 72, 0.1, 0.1, 10.0));
                     audioClip = file; //assigning the file to processor
+                    currentPitch = 0;
                     sendActionMessage("Keyboard is ready");
                 }
             }
